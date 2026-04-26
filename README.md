@@ -4,9 +4,11 @@ A full-stack web app that aggregates Cloud Infrastructure / DevOps / SRE / Platf
 Engineer postings from the last 24–48 hours and (in later phases) tailors a resume
 to a selected job description with Claude.
 
-> **Status:** Phase 1 (job aggregation + browsing UI) is implemented. Phases 2–4
-> (auth, resume tailoring, cover letters) are scaffolded with clear extension
-> points and will land in subsequent iterations.
+> **Status:** Phases 1–4 are implemented — multi-source job aggregation,
+> browsing UI, JWT auth, server-side saved jobs, resume parsing,
+> Claude-powered tailoring with diff view + ATS score, cover-letter
+> generation, email alerts (instant + daily digest), and an applications
+> tracker with per-resume A/B response-rate stats.
 
 ---
 
@@ -93,7 +95,33 @@ npm run dev        # http://localhost:5173
 | GET    | `/api/jobs`                | List jobs. Query: `hours, remote, techStack, experience, salaryMin, search, sort, limit, offset` |
 | GET    | `/api/jobs/:id`            | Job detail                                                                                       |
 | GET    | `/api/jobs/meta/tech-stack`| Available tech-stack tags for the filter UI                                                      |
-| POST   | `/api/jobs/refresh`        | Enqueue a one-off scrape job                                                                     |
+| POST   | `/api/jobs/refresh`        | Enqueue a one-off scrape job. Body: `{ "source": "all" \| "jsearch" \| "remoteok" \| ... }`      |
+| POST   | `/api/auth/register`       | `{ email, password }` → `{ user, token }`                                                        |
+| POST   | `/api/auth/login`          | `{ email, password }` → `{ user, token }`                                                        |
+| GET    | `/api/auth/me`             | Current user (auth required)                                                                     |
+| GET    | `/api/saved-jobs`          | List saved jobs (auth required)                                                                  |
+| GET    | `/api/saved-jobs/ids`      | List saved job IDs (auth required)                                                               |
+| POST   | `/api/saved-jobs/:jobId`   | Save (auth required)                                                                             |
+| DELETE | `/api/saved-jobs/:jobId`   | Unsave (auth required)                                                                           |
+| GET    | `/api/resumes`             | List the user's resumes (auth required)                                                          |
+| POST   | `/api/resumes`             | Upload (multipart `file` PDF/DOCX) or paste (`{name, text, isBase}`); parsed to JSON             |
+| GET    | `/api/resumes/:id`         | Resume detail with parsed JSON (auth required)                                                   |
+| PATCH  | `/api/resumes/:id`         | Edit name / content / `is_base` (auth required)                                                  |
+| DELETE | `/api/resumes/:id`         | Delete (auth required)                                                                           |
+| POST   | `/api/tailor`              | Tailor resume to a job. Body: `{baseResumeId, jobId \| jobDescription, ...}` (auth + AI key)     |
+| POST   | `/api/tailor/score`        | ATS keyword-match score only (no Claude call)                                                    |
+| POST   | `/api/tailor/cover-letter` | Generate a cover letter from the same payload                                                    |
+| GET    | `/api/tailor/saved`        | List saved tailored resumes                                                                      |
+| GET    | `/api/tailor/saved/:id`    | Saved tailored resume detail                                                                     |
+| GET    | `/api/alerts`              | List alerts (auth required)                                                                      |
+| POST   | `/api/alerts`              | Create alert. Body: `{name, keywords?, techStack?, remoteOnly?, salaryMin?, experience?, delivery?}` |
+| PATCH  | `/api/alerts/:id`          | Update an alert (toggle delivery / enabled, edit criteria)                                       |
+| DELETE | `/api/alerts/:id`          | Delete an alert                                                                                  |
+| GET    | `/api/applications`        | List applications with joined job + resume metadata                                              |
+| GET    | `/api/applications/stats`  | Per-tailored-resume response-rate stats for A/B testing                                          |
+| POST   | `/api/applications`        | Log a new application                                                                            |
+| PATCH  | `/api/applications/:id`    | Update status / notes / responded-at                                                             |
+| DELETE | `/api/applications/:id`    | Delete an application                                                                            |
 
 Example:
 
@@ -137,11 +165,20 @@ See `docs/extending-sources.md` for a worked example.
 ## Roadmap
 
 - **Phase 1 (done):** JSearch source, jobs API, browsing UI with filters & detail drawer.
-- **Phase 2:** Auth (JWT), saved jobs persisted server-side, more sources
-  (Adzuna, Greenhouse, Lever, RemoteOK, HN "Who is hiring").
-- **Phase 3:** Resume tailoring tab — upload PDF/DOCX, parse to JSON, run
-  through Claude, show diff + ATS score, export to PDF/DOCX.
-- **Phase 4:** Cover-letter generator, alerts/email digests.
+- **Phase 2 (done):** JWT auth (register/login/me), server-side saved jobs,
+  five additional sources — RemoteOK, Adzuna, Greenhouse public boards,
+  Lever public boards, HN "Who is hiring" parser.
+- **Phase 3 (done):** Resume tailoring tab — PDF/DOCX/text parsing to
+  structured JSON, Claude-powered tailoring with adaptive thinking, prompt
+  caching on the system prompt, side-by-side diff with `diffWords`,
+  ATS keyword-match score with missing-keyword report, cover-letter
+  generator, and PDF / DOCX / TXT / clipboard export from the browser.
+- **Phase 4 (done):** Email alerts with criteria (keywords, tech stack,
+  remote, salary, experience) and per-alert delivery (`instant`, `digest`,
+  `both`, `off`). Instant alerts fire after each scrape; digests run on a
+  configurable cron (`DIGEST_CRON`, default 14:00 UTC). Nodemailer
+  transport with a stdout fallback for local dev. Applications tracker
+  with status pipeline and per-tailored-resume A/B response-rate stats.
 
 ---
 

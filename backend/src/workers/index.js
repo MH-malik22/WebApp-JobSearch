@@ -1,38 +1,101 @@
 import { Worker } from 'bullmq';
-import { connection, SCRAPE_QUEUE, scheduleRecurringScrape, enqueueOnce } from './queue.js';
+import {
+  connection,
+  SCRAPE_QUEUE,
+  DIGEST_QUEUE,
+  scheduleRecurringScrape,
+  scheduleDailyDigest,
+  enqueueOnce,
+} from './queue.js';
 import { fetchJSearchJobs } from '../scrapers/jsearch.js';
+import { fetchRemoteOkJobs } from '../scrapers/remoteok.js';
+import { fetchAdzunaJobs } from '../scrapers/adzuna.js';
+import { fetchGreenhouseJobs } from '../scrapers/greenhouse.js';
+import { fetchLeverJobs } from '../scrapers/lever.js';
+import { fetchHackerNewsJobs } from '../scrapers/hackernews.js';
 import { upsertJobs } from '../services/jobsService.js';
+import {
+  dispatchDigests,
+  dispatchInstantAlerts,
+} from '../services/alertDispatch.js';
 import { env } from '../config/env.js';
 
-const SCRAPERS = {
+export const SCRAPERS = {
   jsearch: fetchJSearchJobs,
-  // Future: indeed, adzuna, greenhouse, lever, remoteok, ycombinator, hackernews
+  remoteok: fetchRemoteOkJobs,
+  adzuna: fetchAdzunaJobs,
+  greenhouse: fetchGreenhouseJobs,
+  lever: fetchLeverJobs,
+  hackernews: fetchHackerNewsJobs,
 };
 
-const worker = new Worker(
+const scrapeWorker = new Worker(
   SCRAPE_QUEUE,
   async (job) => {
-    const { source = 'jsearch', hours = 48 } = job.data ?? {};
-    const fn = SCRAPERS[source];
-    if (!fn) throw new Error(`unknown source: ${source}`);
+    const { source, hours = 48 } = job.data ?? {};
+    let summary;
 
-    console.log(`[worker] running ${source} (last ${hours}h)`);
-    const jobs = await fn({ hours });
-    const result = await upsertJobs(jobs);
-    console.log(`[worker] ${source} -> +${result.inserted} new / ~${result.updated} updated`);
-    return result;
+    if (source === 'all' || !source) {
+      summary = {};
+      for (const [name, fn] of Object.entries(SCRAPERS)) {
+        console.log(`[worker] running ${name} (last ${hours}h)`);
+        const jobs = await fn({ hours });
+        summary[name] = await upsertJobs(jobs);
+        console.log(
+          `[worker] ${name} -> +${summary[name].inserted} new / ~${summary[name].updated} updated`
+        );
+      }
+    } else {
+      const fn = SCRAPERS[source];
+      if (!fn) throw new Error(`unknown source: ${source}`);
+      console.log(`[worker] running ${source} (last ${hours}h)`);
+      const jobs = await fn({ hours });
+      summary = await upsertJobs(jobs);
+      console.log(
+        `[worker] ${source} -> +${summary.inserted} new / ~${summary.updated} updated`
+      );
+    }
+
+    // Dispatch instant alerts after every scrape — keeps alerted-job latency
+    // bounded by the scrape interval, with no extra schedule to maintain.
+    try {
+      const result = await dispatchInstantAlerts({ sinceHours: 6 });
+      console.log(
+        `[worker] instant alerts: ${result.emails} email(s) across ${result.alerts} alert(s)`
+      );
+    } catch (err) {
+      console.error('[worker] instant alert dispatch failed:', err.message);
+    }
+
+    return summary;
   },
   { connection, concurrency: 2 }
 );
 
-worker.on('failed', (job, err) => {
-  console.error(`[worker] job ${job?.id} failed:`, err.message);
+const digestWorker = new Worker(
+  DIGEST_QUEUE,
+  async () => {
+    const result = await dispatchDigests({ sinceHours: 24 });
+    console.log(
+      `[digest] sent ${result.emails} digest(s) to ${result.users} user(s)`
+    );
+    return result;
+  },
+  { connection, concurrency: 1 }
+);
+
+scrapeWorker.on('failed', (job, err) => {
+  console.error(`[scrape-worker] job ${job?.id} failed:`, err.message);
+});
+digestWorker.on('failed', (job, err) => {
+  console.error(`[digest-worker] job ${job?.id} failed:`, err.message);
 });
 
 (async () => {
   try {
     await scheduleRecurringScrape();
-    if (env.scrapeOnBoot) await enqueueOnce('jsearch', 48);
+    await scheduleDailyDigest();
+    if (env.scrapeOnBoot) await enqueueOnce('all', 48);
     console.log('[worker] ready');
   } catch (err) {
     console.error('[worker] bootstrap failed:', err);
@@ -41,7 +104,7 @@ worker.on('failed', (job, err) => {
 
 const shutdown = async () => {
   console.log('[worker] shutting down');
-  await worker.close();
+  await Promise.all([scrapeWorker.close(), digestWorker.close()]);
   await connection.quit();
   process.exit(0);
 };

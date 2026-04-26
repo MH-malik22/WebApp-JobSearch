@@ -7,29 +7,49 @@ export const connection = new IORedis(env.redisUrl, {
 });
 
 export const SCRAPE_QUEUE = 'scrape-jobs';
+export const DIGEST_QUEUE = 'send-digests';
 
 export const scrapeQueue = new Queue(SCRAPE_QUEUE, { connection });
 export const scrapeEvents = new QueueEvents(SCRAPE_QUEUE, { connection });
+export const digestQueue = new Queue(DIGEST_QUEUE, { connection });
 
 export async function scheduleRecurringScrape() {
   const everyMs = env.scrapeIntervalMinutes * 60 * 1000;
   await scrapeQueue.add(
-    'jsearch',
-    { source: 'jsearch', hours: 48 },
+    'all',
+    { source: 'all', hours: 48 },
     {
       repeat: { every: everyMs },
-      jobId: 'jsearch-recurring',
+      jobId: 'all-sources-recurring',
       removeOnComplete: 50,
       removeOnFail: 50,
     }
   );
-  console.log(`[queue] scheduled jsearch every ${env.scrapeIntervalMinutes}m`);
+  console.log(`[queue] scheduled all-sources every ${env.scrapeIntervalMinutes}m`);
 }
 
-export async function enqueueOnce(source = 'jsearch', hours = 48) {
+export async function scheduleDailyDigest() {
+  await digestQueue.add(
+    'daily',
+    { kind: 'daily' },
+    {
+      repeat: { pattern: env.digestCron, tz: 'UTC' },
+      jobId: 'daily-digest',
+      removeOnComplete: 10,
+      removeOnFail: 10,
+    }
+  );
+  console.log(`[queue] scheduled daily digest at "${env.digestCron}" UTC`);
+}
+
+export async function enqueueOnce(source = 'all', hours = 48) {
   return scrapeQueue.add(
     source,
     { source, hours },
     { removeOnComplete: 20, removeOnFail: 20 }
   );
+}
+
+export async function enqueueDigestNow() {
+  return digestQueue.add('manual', { kind: 'manual' });
 }
