@@ -8,6 +8,7 @@ import {
   renderInstantAlertEmail,
   sendEmail,
 } from './emailService.js';
+import { alertsSent } from '../config/metrics.js';
 
 // After every scrape we run this. For each enabled "instant" or "both" alert
 // we look back a small window for fresh matches, send one email per match
@@ -29,6 +30,7 @@ export async function dispatchInstantAlerts({ sinceHours = 6 } = {}) {
         const { subject, text, html } = renderInstantAlertEmail({ alert, job });
         await sendEmail({ to: alert.user_email, subject, text, html });
         sent += 1;
+        alertsSent.inc({ kind: 'instant' });
       }
 
       // Mark every matched job as notified, even ones we capped out of the
@@ -78,6 +80,7 @@ export async function dispatchDigests({ sinceHours = 24 } = {}) {
       });
       await sendEmail({ to: email, subject, text, html });
       sent += 1;
+      alertsSent.inc({ kind: 'digest' });
 
       for (const [alertId, jobIds] of Object.entries(recordedJobIdsByAlert)) {
         await recordNotifications(alertId, jobIds);

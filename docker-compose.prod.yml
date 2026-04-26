@@ -1,0 +1,75 @@
+# Production overrides for docker-compose.yml.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Differences from dev:
+#   - db / redis ports are NOT exposed to the host
+#   - api / worker pull all secrets from .env (no defaults)
+#   - restart: always for resilience
+#   - healthchecks on api and worker
+#   - resource limits
+#   - log driver tuned for json (so a side-car shipper can pick it up)
+
+services:
+  db:
+    ports: !reset []
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+
+  redis:
+    ports: !reset []
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+
+  api:
+    restart: always
+    environment:
+      NODE_ENV: production
+      LOG_LEVEL: info
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4000/api/health/live || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  worker:
+    restart: always
+    environment:
+      NODE_ENV: production
+      LOG_LEVEL: info
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  web:
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
