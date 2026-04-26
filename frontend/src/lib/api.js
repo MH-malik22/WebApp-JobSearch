@@ -82,3 +82,69 @@ export async function saveJobRemote(jobId) {
 export async function unsaveJobRemote(jobId) {
   await api.delete(`/saved-jobs/${jobId}`);
 }
+
+// --- Resumes -------------------------------------------------------------
+
+export async function fetchResumes() {
+  const { data } = await api.get('/resumes');
+  return data.resumes;
+}
+
+export async function fetchResume(id) {
+  const { data } = await api.get(`/resumes/${id}`);
+  return data.resume;
+}
+
+export async function uploadResume({ name, file, isBase = false }) {
+  const form = new FormData();
+  form.append('name', name);
+  form.append('isBase', String(isBase));
+  if (file) form.append('file', file);
+  const { data } = await api.post('/resumes', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data.resume;
+}
+
+export async function pasteResume({ name, text, isBase = false }) {
+  const { data } = await api.post('/resumes', { name, text, isBase });
+  return data.resume;
+}
+
+export async function updateResumeRemote(id, payload) {
+  const { data } = await api.patch(`/resumes/${id}`, payload);
+  return data.resume;
+}
+
+export async function deleteResumeRemote(id) {
+  await api.delete(`/resumes/${id}`);
+}
+
+// --- Tailoring -----------------------------------------------------------
+
+export async function scoreResume(payload) {
+  const { data } = await api.post('/tailor/score', payload);
+  return data;
+}
+
+export async function tailorResume(payload) {
+  const { data } = await api.post('/tailor', payload, { timeout: 120_000 });
+  return data;
+}
+
+export async function generateCoverLetter(payload) {
+  const { data } = await api.post('/tailor/cover-letter', payload, {
+    timeout: 120_000,
+  });
+  return data;
+}
+
+export async function fetchSavedTailored() {
+  const { data } = await api.get('/tailor/saved');
+  return data.tailored;
+}
+
+export async function fetchSavedTailoredById(id) {
+  const { data } = await api.get(`/tailor/saved/${id}`);
+  return data.tailored;
+}

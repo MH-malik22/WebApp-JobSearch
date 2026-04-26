@@ -7,6 +7,8 @@ import jobsRouter from './routes/jobs.js';
 import healthRouter from './routes/health.js';
 import authRouter from './routes/auth.js';
 import savedJobsRouter from './routes/savedJobs.js';
+import resumesRouter from './routes/resumes.js';
+import tailorRouter from './routes/tailor.js';
 import { notFound, errorHandler } from './middleware/error.js';
 
 const app = express();
@@ -24,6 +26,8 @@ app.use('/api/health', healthRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/jobs', jobsRouter);
 app.use('/api/saved-jobs', savedJobsRouter);
+app.use('/api/resumes', resumesRouter);
+app.use('/api/tailor', tailorRouter);
 
 app.use(notFound);
 app.use(errorHandler);

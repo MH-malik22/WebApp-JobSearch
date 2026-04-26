@@ -28,7 +28,7 @@ export const env = {
   adzunaAppKey: process.env.ADZUNA_APP_KEY ?? '',
 
   anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? '',
-  anthropicModel: process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-5',
+  anthropicModel: process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-6',
 
   scrapeIntervalMinutes: Number(process.env.SCRAPE_INTERVAL_MINUTES ?? 180),
   scrapeOnBoot: (process.env.SCRAPE_ON_BOOT ?? 'true') === 'true',

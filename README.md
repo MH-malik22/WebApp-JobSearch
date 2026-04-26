@@ -4,9 +4,10 @@ A full-stack web app that aggregates Cloud Infrastructure / DevOps / SRE / Platf
 Engineer postings from the last 24–48 hours and (in later phases) tailors a resume
 to a selected job description with Claude.
 
-> **Status:** Phases 1 & 2 are implemented — multi-source aggregation,
-> browsing UI, JWT auth, and server-side saved jobs. Phase 3 (resume
-> tailoring) is scaffolded with clear extension points and will land next.
+> **Status:** Phases 1–3 are implemented — multi-source job aggregation,
+> browsing UI, JWT auth, server-side saved jobs, resume parsing,
+> Claude-powered tailoring with diff view + ATS score, and cover-letter
+> generation. Phase 4 (alerts/digests) is the next milestone.
 
 ---
 
@@ -101,6 +102,16 @@ npm run dev        # http://localhost:5173
 | GET    | `/api/saved-jobs/ids`      | List saved job IDs (auth required)                                                               |
 | POST   | `/api/saved-jobs/:jobId`   | Save (auth required)                                                                             |
 | DELETE | `/api/saved-jobs/:jobId`   | Unsave (auth required)                                                                           |
+| GET    | `/api/resumes`             | List the user's resumes (auth required)                                                          |
+| POST   | `/api/resumes`             | Upload (multipart `file` PDF/DOCX) or paste (`{name, text, isBase}`); parsed to JSON             |
+| GET    | `/api/resumes/:id`         | Resume detail with parsed JSON (auth required)                                                   |
+| PATCH  | `/api/resumes/:id`         | Edit name / content / `is_base` (auth required)                                                  |
+| DELETE | `/api/resumes/:id`         | Delete (auth required)                                                                           |
+| POST   | `/api/tailor`              | Tailor resume to a job. Body: `{baseResumeId, jobId \| jobDescription, ...}` (auth + AI key)     |
+| POST   | `/api/tailor/score`        | ATS keyword-match score only (no Claude call)                                                    |
+| POST   | `/api/tailor/cover-letter` | Generate a cover letter from the same payload                                                    |
+| GET    | `/api/tailor/saved`        | List saved tailored resumes                                                                      |
+| GET    | `/api/tailor/saved/:id`    | Saved tailored resume detail                                                                     |
 
 Example:
 
@@ -147,9 +158,13 @@ See `docs/extending-sources.md` for a worked example.
 - **Phase 2 (done):** JWT auth (register/login/me), server-side saved jobs,
   five additional sources — RemoteOK, Adzuna, Greenhouse public boards,
   Lever public boards, HN "Who is hiring" parser.
-- **Phase 3:** Resume tailoring tab — upload PDF/DOCX, parse to JSON, run
-  through Claude, show diff + ATS score, export to PDF/DOCX.
-- **Phase 4:** Cover-letter generator, alerts/email digests.
+- **Phase 3 (done):** Resume tailoring tab — PDF/DOCX/text parsing to
+  structured JSON, Claude-powered tailoring with adaptive thinking, prompt
+  caching on the system prompt, side-by-side diff with `diffWords`,
+  ATS keyword-match score with missing-keyword report, cover-letter
+  generator, and PDF / DOCX / TXT / clipboard export from the browser.
+- **Phase 4:** Email digests, JD alerts when new matching jobs land,
+  multi-resume A/B testing.
 
 ---
 
