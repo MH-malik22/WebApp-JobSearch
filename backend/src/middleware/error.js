@@ -3,6 +3,9 @@ export function notFound(req, res) {
 }
 
 export function errorHandler(err, _req, res, _next) {
+  if (err?.name === 'ZodError') {
+    return res.status(400).json({ error: 'validation_error', issues: err.issues });
+  }
   console.error('[error]', err);
   const status = err.status ?? 500;
   res.status(status).json({

@@ -41,10 +41,12 @@ router.get('/meta/tech-stack', (_req, res) => {
   res.json({ tags: TECH_STACK_TAGS });
 });
 
-router.post('/refresh', async (_req, res, next) => {
+router.post('/refresh', async (req, res, next) => {
   try {
-    const job = await enqueueOnce('jsearch', 48);
-    res.status(202).json({ enqueued: true, jobId: job.id });
+    const source = req.body?.source || req.query?.source || 'all';
+    const hours = Number(req.body?.hours || req.query?.hours || 48);
+    const job = await enqueueOnce(source, hours);
+    res.status(202).json({ enqueued: true, jobId: job.id, source, hours });
   } catch (err) {
     next(err);
   }

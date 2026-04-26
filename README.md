@@ -4,9 +4,9 @@ A full-stack web app that aggregates Cloud Infrastructure / DevOps / SRE / Platf
 Engineer postings from the last 24–48 hours and (in later phases) tailors a resume
 to a selected job description with Claude.
 
-> **Status:** Phase 1 (job aggregation + browsing UI) is implemented. Phases 2–4
-> (auth, resume tailoring, cover letters) are scaffolded with clear extension
-> points and will land in subsequent iterations.
+> **Status:** Phases 1 & 2 are implemented — multi-source aggregation,
+> browsing UI, JWT auth, and server-side saved jobs. Phase 3 (resume
+> tailoring) is scaffolded with clear extension points and will land next.
 
 ---
 
@@ -93,7 +93,14 @@ npm run dev        # http://localhost:5173
 | GET    | `/api/jobs`                | List jobs. Query: `hours, remote, techStack, experience, salaryMin, search, sort, limit, offset` |
 | GET    | `/api/jobs/:id`            | Job detail                                                                                       |
 | GET    | `/api/jobs/meta/tech-stack`| Available tech-stack tags for the filter UI                                                      |
-| POST   | `/api/jobs/refresh`        | Enqueue a one-off scrape job                                                                     |
+| POST   | `/api/jobs/refresh`        | Enqueue a one-off scrape job. Body: `{ "source": "all" \| "jsearch" \| "remoteok" \| ... }`      |
+| POST   | `/api/auth/register`       | `{ email, password }` → `{ user, token }`                                                        |
+| POST   | `/api/auth/login`          | `{ email, password }` → `{ user, token }`                                                        |
+| GET    | `/api/auth/me`             | Current user (auth required)                                                                     |
+| GET    | `/api/saved-jobs`          | List saved jobs (auth required)                                                                  |
+| GET    | `/api/saved-jobs/ids`      | List saved job IDs (auth required)                                                               |
+| POST   | `/api/saved-jobs/:jobId`   | Save (auth required)                                                                             |
+| DELETE | `/api/saved-jobs/:jobId`   | Unsave (auth required)                                                                           |
 
 Example:
 
@@ -137,8 +144,9 @@ See `docs/extending-sources.md` for a worked example.
 ## Roadmap
 
 - **Phase 1 (done):** JSearch source, jobs API, browsing UI with filters & detail drawer.
-- **Phase 2:** Auth (JWT), saved jobs persisted server-side, more sources
-  (Adzuna, Greenhouse, Lever, RemoteOK, HN "Who is hiring").
+- **Phase 2 (done):** JWT auth (register/login/me), server-side saved jobs,
+  five additional sources — RemoteOK, Adzuna, Greenhouse public boards,
+  Lever public boards, HN "Who is hiring" parser.
 - **Phase 3:** Resume tailoring tab — upload PDF/DOCX, parse to JSON, run
   through Claude, show diff + ATS score, export to PDF/DOCX.
 - **Phase 4:** Cover-letter generator, alerts/email digests.
