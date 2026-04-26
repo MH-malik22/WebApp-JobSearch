@@ -122,6 +122,8 @@ npm run dev        # http://localhost:5173
 | POST   | `/api/applications`        | Log a new application                                                                            |
 | PATCH  | `/api/applications/:id`    | Update status / notes / responded-at                                                             |
 | DELETE | `/api/applications/:id`    | Delete an application                                                                            |
+| GET    | `/api/health/live`         | Liveness probe — returns 200 as long as the process is up                                        |
+| GET    | `/api/metrics`             | Prometheus exposition (default Node metrics + custom counters)                                   |
 
 Example:
 

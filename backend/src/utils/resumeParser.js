@@ -1,5 +1,6 @@
-import pdfParse from 'pdf-parse';
-import mammoth from 'mammoth';
+// pdf-parse and mammoth are large native-binding-laden deps. We lazy-import
+// them only when actually needed so unit tests over `structureResume()` can
+// run without installing them.
 
 const SECTION_PATTERNS = [
   ['summary', /^(professional\s+)?summary|profile|objective\b/i],
@@ -17,6 +18,7 @@ const URL_RE = /\b(?:https?:\/\/|www\.)[^\s)]+/gi;
 export async function extractText(buffer, mimetype, filename = '') {
   const lower = (mimetype || '').toLowerCase();
   if (lower.includes('pdf') || filename.endsWith('.pdf')) {
+    const { default: pdfParse } = await import('pdf-parse');
     const out = await pdfParse(buffer);
     return out.text;
   }
@@ -25,6 +27,7 @@ export async function extractText(buffer, mimetype, filename = '') {
     lower.includes('msword') ||
     filename.endsWith('.docx')
   ) {
+    const { default: mammoth } = await import('mammoth');
     const out = await mammoth.extractRawText({ buffer });
     return out.value;
   }
