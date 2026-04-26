@@ -33,4 +33,14 @@ export const env = {
   scrapeIntervalMinutes: Number(process.env.SCRAPE_INTERVAL_MINUTES ?? 180),
   scrapeOnBoot: (process.env.SCRAPE_ON_BOOT ?? 'true') === 'true',
   useSeedData: (process.env.USE_SEED_DATA ?? 'false') === 'true',
+
+  // Email — falls back to a stdout-only "console" transport when nothing is set.
+  smtpHost: process.env.SMTP_HOST ?? '',
+  smtpPort: Number(process.env.SMTP_PORT ?? 587),
+  smtpSecure: (process.env.SMTP_SECURE ?? 'false') === 'true',
+  smtpUser: process.env.SMTP_USER ?? '',
+  smtpPass: process.env.SMTP_PASS ?? '',
+  emailFrom: process.env.EMAIL_FROM ?? 'CloudOps Job Hunter <noreply@cloudops.local>',
+  appBaseUrl: process.env.APP_BASE_URL ?? 'http://localhost:5173',
+  digestCron: process.env.DIGEST_CRON ?? '0 14 * * *', // 14:00 UTC daily
 };

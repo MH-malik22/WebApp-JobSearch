@@ -9,6 +9,8 @@ import authRouter from './routes/auth.js';
 import savedJobsRouter from './routes/savedJobs.js';
 import resumesRouter from './routes/resumes.js';
 import tailorRouter from './routes/tailor.js';
+import alertsRouter from './routes/alerts.js';
+import applicationsRouter from './routes/applications.js';
 import { notFound, errorHandler } from './middleware/error.js';
 
 const app = express();
@@ -28,6 +30,8 @@ app.use('/api/jobs', jobsRouter);
 app.use('/api/saved-jobs', savedJobsRouter);
 app.use('/api/resumes', resumesRouter);
 app.use('/api/tailor', tailorRouter);
+app.use('/api/alerts', alertsRouter);
+app.use('/api/applications', applicationsRouter);
 
 app.use(notFound);
 app.use(errorHandler);

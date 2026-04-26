@@ -4,10 +4,11 @@ A full-stack web app that aggregates Cloud Infrastructure / DevOps / SRE / Platf
 Engineer postings from the last 24–48 hours and (in later phases) tailors a resume
 to a selected job description with Claude.
 
-> **Status:** Phases 1–3 are implemented — multi-source job aggregation,
+> **Status:** Phases 1–4 are implemented — multi-source job aggregation,
 > browsing UI, JWT auth, server-side saved jobs, resume parsing,
-> Claude-powered tailoring with diff view + ATS score, and cover-letter
-> generation. Phase 4 (alerts/digests) is the next milestone.
+> Claude-powered tailoring with diff view + ATS score, cover-letter
+> generation, email alerts (instant + daily digest), and an applications
+> tracker with per-resume A/B response-rate stats.
 
 ---
 
@@ -112,6 +113,15 @@ npm run dev        # http://localhost:5173
 | POST   | `/api/tailor/cover-letter` | Generate a cover letter from the same payload                                                    |
 | GET    | `/api/tailor/saved`        | List saved tailored resumes                                                                      |
 | GET    | `/api/tailor/saved/:id`    | Saved tailored resume detail                                                                     |
+| GET    | `/api/alerts`              | List alerts (auth required)                                                                      |
+| POST   | `/api/alerts`              | Create alert. Body: `{name, keywords?, techStack?, remoteOnly?, salaryMin?, experience?, delivery?}` |
+| PATCH  | `/api/alerts/:id`          | Update an alert (toggle delivery / enabled, edit criteria)                                       |
+| DELETE | `/api/alerts/:id`          | Delete an alert                                                                                  |
+| GET    | `/api/applications`        | List applications with joined job + resume metadata                                              |
+| GET    | `/api/applications/stats`  | Per-tailored-resume response-rate stats for A/B testing                                          |
+| POST   | `/api/applications`        | Log a new application                                                                            |
+| PATCH  | `/api/applications/:id`    | Update status / notes / responded-at                                                             |
+| DELETE | `/api/applications/:id`    | Delete an application                                                                            |
 
 Example:
 
@@ -163,8 +173,12 @@ See `docs/extending-sources.md` for a worked example.
   caching on the system prompt, side-by-side diff with `diffWords`,
   ATS keyword-match score with missing-keyword report, cover-letter
   generator, and PDF / DOCX / TXT / clipboard export from the browser.
-- **Phase 4:** Email digests, JD alerts when new matching jobs land,
-  multi-resume A/B testing.
+- **Phase 4 (done):** Email alerts with criteria (keywords, tech stack,
+  remote, salary, experience) and per-alert delivery (`instant`, `digest`,
+  `both`, `off`). Instant alerts fire after each scrape; digests run on a
+  configurable cron (`DIGEST_CRON`, default 14:00 UTC). Nodemailer
+  transport with a stdout fallback for local dev. Applications tracker
+  with status pipeline and per-tailored-resume A/B response-rate stats.
 
 ---
 

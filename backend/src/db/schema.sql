@@ -68,3 +68,59 @@ CREATE TABLE IF NOT EXISTS tailored_resumes (
   cover_letter   TEXT,
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Phase 4: alert criteria and per-alert delivery preferences.
+CREATE TABLE IF NOT EXISTS alerts (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  name            TEXT NOT NULL,
+  -- Filter criteria mirror the /api/jobs query params.
+  keywords        TEXT,
+  tech_stack_tags TEXT[] NOT NULL DEFAULT '{}',
+  remote_only     BOOLEAN NOT NULL DEFAULT FALSE,
+  salary_min      INTEGER,
+  experience      TEXT,
+  -- Delivery: 'instant' fires on each match; 'digest' batches into daily email.
+  delivery        TEXT NOT NULL DEFAULT 'digest'
+                  CHECK (delivery IN ('instant', 'digest', 'both', 'off')),
+  enabled         BOOLEAN NOT NULL DEFAULT TRUE,
+  last_sent_at    TIMESTAMPTZ,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS alerts_user_idx ON alerts (user_id);
+
+-- Track which alert / job pairs have already been notified, so a job
+-- never gets emailed twice through the same alert.
+CREATE TABLE IF NOT EXISTS alert_notifications (
+  alert_id  UUID NOT NULL REFERENCES alerts(id) ON DELETE CASCADE,
+  job_id    UUID NOT NULL REFERENCES jobs(id)   ON DELETE CASCADE,
+  sent_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (alert_id, job_id)
+);
+
+-- Application tracking for A/B testing tailored resumes against real jobs.
+CREATE TABLE IF NOT EXISTS applications (
+  id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id            UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  job_id             UUID REFERENCES jobs(id) ON DELETE SET NULL,
+  tailored_resume_id UUID REFERENCES tailored_resumes(id) ON DELETE SET NULL,
+  base_resume_id     UUID REFERENCES resumes(id) ON DELETE SET NULL,
+  -- Free-form context for jobs not tracked in our jobs table.
+  company            TEXT,
+  title              TEXT,
+  apply_url          TEXT,
+  status             TEXT NOT NULL DEFAULT 'applied'
+                     CHECK (status IN
+                       ('applied','screening','interview','offer','rejected','ghosted','withdrawn')),
+  applied_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  responded_at       TIMESTAMPTZ,
+  notes              TEXT,
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS applications_user_idx
+  ON applications (user_id, applied_at DESC);
+CREATE INDEX IF NOT EXISTS applications_tailored_resume_idx
+  ON applications (tailored_resume_id);

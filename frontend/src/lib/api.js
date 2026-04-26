@@ -148,3 +148,97 @@ export async function fetchSavedTailoredById(id) {
   const { data } = await api.get(`/tailor/saved/${id}`);
   return data.tailored;
 }
+
+// --- Alerts --------------------------------------------------------------
+
+export async function fetchAlerts() {
+  const { data } = await api.get('/alerts');
+  return data.alerts;
+}
+
+export async function createAlert(payload) {
+  const { data } = await api.post('/alerts', payload);
+  return data.alert;
+}
+
+export async function updateAlert(id, payload) {
+  const { data } = await api.patch(`/alerts/${id}`, payload);
+  return data.alert;
+}
+
+export async function deleteAlert(id) {
+  await api.delete(`/alerts/${id}`);
+}
+
+// --- Applications --------------------------------------------------------
+
+export async function fetchApplications() {
+  const { data } = await api.get('/applications');
+  return data.applications;
+}
+
+export async function fetchApplicationStats() {
+  const { data } = await api.get('/applications/stats');
+  return data.stats;
+}
+
+export async function createApplication(payload) {
+  const { data } = await api.post('/applications', payload);
+  return data.application;
+}
+
+export async function updateApplication(id, payload) {
+  const { data } = await api.patch(`/applications/${id}`, payload);
+  return data.application;
+}
+
+export async function deleteApplication(id) {
+  await api.delete(`/applications/${id}`);
+}
+
+// --- Alerts --------------------------------------------------------------
+
+export async function fetchAlerts() {
+  const { data } = await api.get('/alerts');
+  return data.alerts;
+}
+
+export async function createAlert(payload) {
+  const { data } = await api.post('/alerts', payload);
+  return data.alert;
+}
+
+export async function updateAlert(id, payload) {
+  const { data } = await api.patch(`/alerts/${id}`, payload);
+  return data.alert;
+}
+
+export async function deleteAlert(id) {
+  await api.delete(`/alerts/${id}`);
+}
+
+// --- Applications --------------------------------------------------------
+
+export async function fetchApplications() {
+  const { data } = await api.get('/applications');
+  return data.applications;
+}
+
+export async function fetchApplicationStats() {
+  const { data } = await api.get('/applications/stats');
+  return data.stats;
+}
+
+export async function createApplication(payload) {
+  const { data } = await api.post('/applications', payload);
+  return data.application;
+}
+
+export async function updateApplication(id, payload) {
+  const { data } = await api.patch(`/applications/${id}`, payload);
+  return data.application;
+}
+
+export async function deleteApplication(id) {
+  await api.delete(`/applications/${id}`);
+}
